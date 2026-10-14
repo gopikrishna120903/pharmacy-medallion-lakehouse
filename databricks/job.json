@@ -1,0 +1,45 @@
+{
+  "name": "pharmacy-medallion-lakehouse",
+  "tags": {"domain": "healthcare", "layer": "medallion"},
+  "parameters": [{"name": "batch_id", "default": "day1"}, {"name": "data_dir", "default": "abfss://lake@<storage-account>.dfs.core.windows.net/pharmacy"}],
+  "job_clusters": [
+    {
+      "job_cluster_key": "etl",
+      "new_cluster": {
+        "spark_version": "15.4.x-scala2.12",
+        "node_type_id": "Standard_D4ds_v5",
+        "autoscale": {"min_workers": 2, "max_workers": 6},
+        "data_security_mode": "USER_ISOLATION",
+        "spark_conf": {
+          "spark.sql.adaptive.enabled": "true",
+          "spark.databricks.delta.optimizeWrite.enabled": "true",
+          "spark.databricks.delta.autoCompact.enabled": "true"
+        }
+      }
+    }
+  ],
+  "tasks": [
+    {
+      "task_key": "bronze",
+      "job_cluster_key": "etl",
+      "python_wheel_task": {"package_name": "pharmacy_lakehouse", "entry_point": "bronze", "parameters": ["{{job.parameters.data_dir}}", "{{job.parameters.batch_id}}"]},
+      "max_retries": 2,
+      "min_retry_interval_millis": 60000
+    },
+    {
+      "task_key": "silver",
+      "depends_on": [{"task_key": "bronze"}],
+      "job_cluster_key": "etl",
+      "python_wheel_task": {"package_name": "pharmacy_lakehouse", "entry_point": "silver", "parameters": ["{{job.parameters.data_dir}}", "{{job.parameters.batch_id}}"]},
+      "max_retries": 2
+    },
+    {
+      "task_key": "gold",
+      "depends_on": [{"task_key": "silver"}],
+      "job_cluster_key": "etl",
+      "python_wheel_task": {"package_name": "pharmacy_lakehouse", "entry_point": "gold", "parameters": ["{{job.parameters.data_dir}}", "{{job.parameters.batch_id}}"]}
+    }
+  ],
+  "email_notifications": {"on_failure": ["data-eng-oncall@example.com"]},
+  "schedule": {"quartz_cron_expression": "0 0 5 * * ?", "timezone_id": "America/Chicago", "pause_status": "PAUSED"}
+}

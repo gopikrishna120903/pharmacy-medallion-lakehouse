@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pharmacy_lakehouse"
+version = "1.0.0"
+description = "Healthcare pharmacy Medallion lakehouse on PySpark and Delta Lake"
+requires-python = ">=3.10"
+dependencies = ["pyspark>=3.5", "delta-spark>=3.2"]
+
+[project.scripts]
+bronze = "pharmacy_lakehouse.bronze:main"
+silver = "pharmacy_lakehouse.silver:main"
+gold = "pharmacy_lakehouse.gold:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 120
