@@ -30,3 +30,20 @@ def test_summary_pass_rates(spark):
     assert rows["qty_positive"]["failed_rows"] == 1
     assert rows["qty_positive"]["pass_rate_pct"] == 50.0
     assert rows["id_present"]["failed_rows"] == 0
+
+
+def test_future_fill_dates_are_quarantined(spark):
+    from datetime import datetime, timedelta
+
+    from pharmacy_lakehouse.silver import FILL_RULES
+
+    rule = [r for r in FILL_RULES if r.name == "fill_date_not_in_future"]
+    now = datetime.now()
+    df = spark.createDataFrame(
+        [("past", now - timedelta(days=1)), ("future", now + timedelta(days=30)), ("missing", None)],
+        "id string, fill_ts timestamp",
+    )
+    valid, quarantine = split_valid_quarantine(apply_rules(df, rule))
+    assert [r["id"] for r in quarantine.collect()] == ["future"]
+    # a missing date is left to the fill_date_present rule, so it passes this one
+    assert sorted(r["id"] for r in valid.collect()) == ["missing", "past"]

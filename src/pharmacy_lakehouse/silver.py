@@ -16,6 +16,7 @@ FILL_RULES = [
     Rule("prescriber_npi_10_digit", "prescriber_npi RLIKE '^[0-9]{10}$'"),
     Rule("paid_amount_non_negative", "paid_amount >= 0"),
     Rule("fill_date_present", "fill_ts IS NOT NULL"),
+    Rule("fill_date_not_in_future", "fill_ts IS NULL OR fill_ts <= current_timestamp()"),	
     Rule("copay_not_above_paid", "copay <= paid_amount", "warn"),
     Rule("days_supply_1_to_365", "days_supply BETWEEN 1 AND 365", "warn"),
 ]
